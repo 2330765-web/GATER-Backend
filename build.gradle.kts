@@ -14,12 +14,18 @@ kotlin {
     jvmToolchain(21)
 }
 
+ktor {
+    fatJar {
+        archiveFileName.set("gater-backend-all.jar")
+    }
+}
+
 dependencies {
     implementation(ktorLibs.server.core)
     implementation(ktorLibs.server.netty)
     implementation(libs.logback.classic)
 
-    // Convierte objetos Kotlin en respuestas JSON
+    // Permite responder y recibir información en formato JSON
     implementation("io.ktor:ktor-server-content-negotiation:3.5.1")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.1")
 
