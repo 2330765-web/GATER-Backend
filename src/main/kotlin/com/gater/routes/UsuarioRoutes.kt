@@ -19,47 +19,83 @@ fun Route.usuarioRoutes() {
 
     route("/usuarios") {
 
+        // Crear un usuario
         post {
             try {
                 val request = call.receive<CrearUsuarioRequest>()
-                val usuario = UsuarioService.crear(request)
+
+                val usuarioCreado = UsuarioService.crear(request)
 
                 call.respond(
                     status = HttpStatusCode.Created,
-                    message = usuario
+                    message = usuarioCreado
                 )
+
             } catch (error: IllegalArgumentException) {
+
+                println("==========================================")
+                println("ERROR DE VALIDACIÓN AL CREAR USUARIO")
+                println("Mensaje: ${error.message}")
+                println("==========================================")
+
                 call.respond(
                     status = HttpStatusCode.BadRequest,
                     message = MensajeResponse(
-                        mensaje = error.message ?: "Datos inválidos"
+                        mensaje = error.message ?: "Los datos enviados no son válidos"
                     )
                 )
+
             } catch (error: Exception) {
+
+                println("==========================================")
+                println("ERROR INTERNO AL CREAR USUARIO")
+                println("Tipo: ${error::class.qualifiedName}")
+                println("Mensaje: ${error.message}")
+                error.printStackTrace()
+                println("==========================================")
+
                 call.respond(
                     status = HttpStatusCode.InternalServerError,
                     message = MensajeResponse(
-                        mensaje = "No fue posible crear el usuario"
+                        mensaje = error.message
+                            ?: "No fue posible crear el usuario"
                     )
                 )
             }
         }
 
+        // Consultar todos los usuarios
         get {
             try {
                 val usuarios = UsuarioService.listar()
-                call.respond(usuarios)
+
+                call.respond(
+                    status = HttpStatusCode.OK,
+                    message = usuarios
+                )
+
             } catch (error: Exception) {
+
+                println("==========================================")
+                println("ERROR AL CONSULTAR USUARIOS")
+                println("Tipo: ${error::class.qualifiedName}")
+                println("Mensaje: ${error.message}")
+                error.printStackTrace()
+                println("==========================================")
+
                 call.respond(
                     status = HttpStatusCode.InternalServerError,
                     message = MensajeResponse(
-                        mensaje = "No fue posible consultar los usuarios"
+                        mensaje = error.message
+                            ?: "No fue posible consultar los usuarios"
                     )
                 )
             }
         }
 
+        // Consultar un usuario por ID
         get("/{id}") {
+
             val id = call.parameters["id"]?.toIntOrNull()
 
             if (id == null) {
@@ -72,21 +108,46 @@ fun Route.usuarioRoutes() {
                 return@get
             }
 
-            val usuario = UsuarioService.obtenerPorId(id)
+            try {
+                val usuario = UsuarioService.obtenerPorId(id)
 
-            if (usuario == null) {
+                if (usuario == null) {
+                    call.respond(
+                        status = HttpStatusCode.NotFound,
+                        message = MensajeResponse(
+                            mensaje = "Usuario no encontrado"
+                        )
+                    )
+                } else {
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        message = usuario
+                    )
+                }
+
+            } catch (error: Exception) {
+
+                println("==========================================")
+                println("ERROR AL CONSULTAR USUARIO POR ID")
+                println("ID: $id")
+                println("Tipo: ${error::class.qualifiedName}")
+                println("Mensaje: ${error.message}")
+                error.printStackTrace()
+                println("==========================================")
+
                 call.respond(
-                    status = HttpStatusCode.NotFound,
+                    status = HttpStatusCode.InternalServerError,
                     message = MensajeResponse(
-                        mensaje = "Usuario no encontrado"
+                        mensaje = error.message
+                            ?: "No fue posible consultar el usuario"
                     )
                 )
-            } else {
-                call.respond(usuario)
             }
         }
 
+        // Actualizar un usuario
         put("/{id}") {
+
             val id = call.parameters["id"]?.toIntOrNull()
 
             if (id == null) {
@@ -101,9 +162,11 @@ fun Route.usuarioRoutes() {
 
             try {
                 val request = call.receive<ActualizarUsuarioRequest>()
-                val usuario = UsuarioService.actualizar(id, request)
 
-                if (usuario == null) {
+                val usuarioActualizado =
+                    UsuarioService.actualizar(id, request)
+
+                if (usuarioActualizado == null) {
                     call.respond(
                         status = HttpStatusCode.NotFound,
                         message = MensajeResponse(
@@ -111,26 +174,50 @@ fun Route.usuarioRoutes() {
                         )
                     )
                 } else {
-                    call.respond(usuario)
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        message = usuarioActualizado
+                    )
                 }
+
             } catch (error: IllegalArgumentException) {
+
+                println("==========================================")
+                println("ERROR DE VALIDACIÓN AL ACTUALIZAR USUARIO")
+                println("ID: $id")
+                println("Mensaje: ${error.message}")
+                println("==========================================")
+
                 call.respond(
                     status = HttpStatusCode.BadRequest,
                     message = MensajeResponse(
-                        mensaje = error.message ?: "Datos inválidos"
+                        mensaje = error.message ?: "Los datos enviados no son válidos"
                     )
                 )
+
             } catch (error: Exception) {
+
+                println("==========================================")
+                println("ERROR INTERNO AL ACTUALIZAR USUARIO")
+                println("ID: $id")
+                println("Tipo: ${error::class.qualifiedName}")
+                println("Mensaje: ${error.message}")
+                error.printStackTrace()
+                println("==========================================")
+
                 call.respond(
                     status = HttpStatusCode.InternalServerError,
                     message = MensajeResponse(
-                        mensaje = "No fue posible actualizar el usuario"
+                        mensaje = error.message
+                            ?: "No fue posible actualizar el usuario"
                     )
                 )
             }
         }
 
+        // Eliminar un usuario
         delete("/{id}") {
+
             val id = call.parameters["id"]?.toIntOrNull()
 
             if (id == null) {
@@ -143,19 +230,40 @@ fun Route.usuarioRoutes() {
                 return@delete
             }
 
-            val eliminado = UsuarioService.eliminar(id)
+            try {
+                val eliminado = UsuarioService.eliminar(id)
 
-            if (!eliminado) {
-                call.respond(
-                    status = HttpStatusCode.NotFound,
-                    message = MensajeResponse(
-                        mensaje = "Usuario no encontrado"
+                if (!eliminado) {
+                    call.respond(
+                        status = HttpStatusCode.NotFound,
+                        message = MensajeResponse(
+                            mensaje = "Usuario no encontrado"
+                        )
                     )
-                )
-            } else {
+                } else {
+                    call.respond(
+                        status = HttpStatusCode.OK,
+                        message = MensajeResponse(
+                            mensaje = "Usuario eliminado correctamente"
+                        )
+                    )
+                }
+
+            } catch (error: Exception) {
+
+                println("==========================================")
+                println("ERROR AL ELIMINAR USUARIO")
+                println("ID: $id")
+                println("Tipo: ${error::class.qualifiedName}")
+                println("Mensaje: ${error.message}")
+                error.printStackTrace()
+                println("==========================================")
+
                 call.respond(
-                    MensajeResponse(
-                        mensaje = "Usuario eliminado correctamente"
+                    status = HttpStatusCode.InternalServerError,
+                    message = MensajeResponse(
+                        mensaje = error.message
+                            ?: "No fue posible eliminar el usuario"
                     )
                 )
             }
