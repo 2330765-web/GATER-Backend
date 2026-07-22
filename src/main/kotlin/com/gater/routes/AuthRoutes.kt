@@ -9,49 +9,37 @@ import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.post
-import io.ktor.server.routing.route
 
 fun Route.authRoutes() {
 
-    route("/login") {
+    post("/login") {
+        try {
+            val request = call.receive<LoginRequest>()
+            val response = AuthService.login(request)
 
-        post {
-            try {
-                val request = call.receive<LoginRequest>()
+            call.respond(
+                status = HttpStatusCode.OK,
+                message = response
+            )
 
-                val response = AuthService.login(request)
-
-                call.respond(
-                    status = HttpStatusCode.OK,
-                    message = response
+        } catch (error: IllegalArgumentException) {
+            call.respond(
+                status = HttpStatusCode.Unauthorized,
+                message = MensajeResponse(
+                    mensaje = error.message
+                        ?: "Correo o contraseña incorrectos"
                 )
+            )
 
-            } catch (error: IllegalArgumentException) {
+        } catch (error: Exception) {
+            error.printStackTrace()
 
-                call.respond(
-                    status = HttpStatusCode.Unauthorized,
-                    message = MensajeResponse(
-                        mensaje = error.message
-                            ?: "No fue posible iniciar sesión"
-                    )
+            call.respond(
+                status = HttpStatusCode.InternalServerError,
+                message = MensajeResponse(
+                    mensaje = "Ocurrió un error al iniciar sesión"
                 )
-
-            } catch (error: Exception) {
-
-                println("==========================================")
-                println("ERROR EN LOGIN")
-                println("Tipo: ${error::class.qualifiedName}")
-                println("Mensaje: ${error.message}")
-                error.printStackTrace()
-                println("==========================================")
-
-                call.respond(
-                    status = HttpStatusCode.InternalServerError,
-                    message = MensajeResponse(
-                        mensaje = "Ocurrió un error al iniciar sesión"
-                    )
-                )
-            }
+            )
         }
     }
 }

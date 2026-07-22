@@ -1,7 +1,8 @@
 package com.gater
 
+import com.gater.routes.authRoutes
 import com.gater.routes.usuarioRoutes
-import io.ktor.http.*
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -10,7 +11,7 @@ fun Application.configureRouting() {
 
     routing {
 
-        // Endpoint principal del sistema
+        // Página principal
         get("/") {
             call.respond(
                 HttpStatusCode.OK,
@@ -23,7 +24,7 @@ fun Application.configureRouting() {
             )
         }
 
-        // Endpoint para comprobar el estado del servidor
+        // Health Check
         get("/health") {
             call.respond(
                 HttpStatusCode.OK,
@@ -33,7 +34,10 @@ fun Application.configureRouting() {
             )
         }
 
-        // Endpoints del módulo de usuarios
+        // CRUD de usuarios
         usuarioRoutes()
+
+        // Login
+        authRoutes()
     }
 }
