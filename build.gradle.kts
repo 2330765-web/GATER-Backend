@@ -41,6 +41,9 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:1.3.1")
     implementation("org.jetbrains.exposed:exposed-java-time:1.3.1")
 
+    // Seguridad para contraseñas
+    implementation("org.mindrot:jbcrypt:0.4")
+
     // Pruebas
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)

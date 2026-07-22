@@ -1,5 +1,6 @@
 package com.gater
 
+import com.gater.routes.usuarioRoutes
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
@@ -31,5 +32,8 @@ fun Application.configureRouting() {
                 )
             )
         }
+
+        // Endpoints del módulo de usuarios
+        usuarioRoutes()
     }
 }
