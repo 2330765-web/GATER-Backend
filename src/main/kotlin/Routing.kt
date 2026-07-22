@@ -2,6 +2,7 @@ package com.gater
 
 import com.gater.routes.authRoutes
 import com.gater.routes.hospitalRoutes
+import com.gater.routes.unidadRoutes
 import com.gater.routes.usuarioRoutes
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
@@ -34,8 +35,16 @@ fun Application.configureRouting() {
             )
         }
 
+        // Usuarios
         usuarioRoutes()
+
+        // Login
         authRoutes()
+
+        // Hospitales
         hospitalRoutes()
+
+        // Unidades
+        unidadRoutes()
     }
 }
