@@ -1,5 +1,6 @@
 package com.gater.repositories
 
+import com.gater.database.DatabaseFactory
 import com.gater.database.RolUsuario
 import com.gater.database.UsuariosTable
 import com.gater.dto.ActualizarUsuarioRequest
@@ -19,18 +20,34 @@ object UsuarioRepository {
     fun crear(
         request: CrearUsuarioRequest,
         passwordHash: String
-    ): Usuario = transaction {
+    ): Usuario = transaction(DatabaseFactory.database) {
 
         val nuevoId = UsuariosTable.insert { statement ->
-            statement[UsuariosTable.nombre] = request.nombre.trim()
-            statement[UsuariosTable.correo] = request.correo.trim().lowercase()
-            statement[UsuariosTable.passwordHash] = passwordHash
+            statement[UsuariosTable.nombre] =
+                request.nombre.trim()
+
+            statement[UsuariosTable.correo] =
+                request.correo.trim().lowercase()
+
+            statement[UsuariosTable.passwordHash] =
+                passwordHash
+
             statement[UsuariosTable.rol] =
-                RolUsuario.valueOf(request.rol.trim().uppercase())
-            statement[UsuariosTable.area] = request.area
-            statement[UsuariosTable.telefono] = request.telefono
-            statement[UsuariosTable.activo] = true
-            statement[UsuariosTable.fechaCreacion] = LocalDateTime.now()
+                RolUsuario.valueOf(
+                    request.rol.trim().uppercase()
+                )
+
+            statement[UsuariosTable.area] =
+                request.area?.trim()
+
+            statement[UsuariosTable.telefono] =
+                request.telefono?.trim()
+
+            statement[UsuariosTable.activo] =
+                true
+
+            statement[UsuariosTable.fechaCreacion] =
+                LocalDateTime.now()
         } get UsuariosTable.id
 
         obtenerPorIdInterno(nuevoId)
@@ -39,72 +56,85 @@ object UsuarioRepository {
             )
     }
 
-    fun listar(): List<Usuario> = transaction {
-        UsuariosTable
-            .selectAll()
-            .map(::filaAUsuario)
-    }
+    fun listar(): List<Usuario> =
+        transaction(DatabaseFactory.database) {
+            UsuariosTable
+                .selectAll()
+                .map(::filaAUsuario)
+        }
 
-    fun obtenerPorId(id: Int): Usuario? = transaction {
-        obtenerPorIdInterno(id)
-    }
+    fun obtenerPorId(id: Int): Usuario? =
+        transaction(DatabaseFactory.database) {
+            obtenerPorIdInterno(id)
+        }
 
-    fun obtenerPorCorreo(correo: String): Usuario? = transaction {
-        UsuariosTable
-            .selectAll()
-            .where {
-                UsuariosTable.correo eq correo.trim().lowercase()
-            }
-            .limit(1)
-            .map(::filaAUsuario)
-            .singleOrNull()
-    }
+    fun obtenerPorCorreo(correo: String): Usuario? =
+        transaction(DatabaseFactory.database) {
+            UsuariosTable
+                .selectAll()
+                .where {
+                    UsuariosTable.correo eq
+                            correo.trim().lowercase()
+                }
+                .limit(1)
+                .map(::filaAUsuario)
+                .singleOrNull()
+        }
 
     fun actualizar(
         id: Int,
         request: ActualizarUsuarioRequest
-    ): Usuario? = transaction {
+    ): Usuario? =
+        transaction(DatabaseFactory.database) {
 
-        val filasActualizadas = UsuariosTable.update(
-            where = {
+            val filasActualizadas =
+                UsuariosTable.update(
+                    where = {
+                        UsuariosTable.id eq id
+                    }
+                ) { statement ->
+
+                    request.nombre?.let { nuevoNombre ->
+                        statement[UsuariosTable.nombre] =
+                            nuevoNombre.trim()
+                    }
+
+                    request.rol?.let { nuevoRol ->
+                        statement[UsuariosTable.rol] =
+                            RolUsuario.valueOf(
+                                nuevoRol.trim().uppercase()
+                            )
+                    }
+
+                    request.area?.let { nuevaArea ->
+                        statement[UsuariosTable.area] =
+                            nuevaArea.trim()
+                    }
+
+                    request.telefono?.let { nuevoTelefono ->
+                        statement[UsuariosTable.telefono] =
+                            nuevoTelefono.trim()
+                    }
+
+                    request.activo?.let { nuevoEstado ->
+                        statement[UsuariosTable.activo] =
+                            nuevoEstado
+                    }
+                }
+
+            if (filasActualizadas == 0) {
+                null
+            } else {
+                obtenerPorIdInterno(id)
+            }
+        }
+
+    fun eliminar(id: Int): Boolean =
+        transaction(DatabaseFactory.database) {
+            UsuariosTable.deleteWhere {
                 UsuariosTable.id eq id
-            }
-        ) { statement ->
-
-            request.nombre?.let { nuevoNombre ->
-                statement[UsuariosTable.nombre] = nuevoNombre.trim()
-            }
-
-            request.rol?.let { nuevoRol ->
-                statement[UsuariosTable.rol] =
-                    RolUsuario.valueOf(nuevoRol.trim().uppercase())
-            }
-
-            request.area?.let { nuevaArea ->
-                statement[UsuariosTable.area] = nuevaArea
-            }
-
-            request.telefono?.let { nuevoTelefono ->
-                statement[UsuariosTable.telefono] = nuevoTelefono
-            }
-
-            request.activo?.let { nuevoEstado ->
-                statement[UsuariosTable.activo] = nuevoEstado
-            }
+            } > 0
         }
-
-        if (filasActualizadas == 0) {
-            null
-        } else {
-            obtenerPorIdInterno(id)
-        }
-    }
-
-    fun eliminar(id: Int): Boolean = transaction {
-        UsuariosTable.deleteWhere {
-            UsuariosTable.id eq id
-        } > 0
-    }
 
     private fun obtenerPorIdInterno(id: Int): Usuario? {
         return UsuariosTable

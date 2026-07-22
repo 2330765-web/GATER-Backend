@@ -5,7 +5,15 @@ import com.gater.database.DatabaseFactory
 import io.ktor.server.application.Application
 
 fun Application.rootModule() {
-    DatabaseFactory.init()
+
+    val conexionCorrecta = DatabaseFactory.init()
+
+    if (!conexionCorrecta) {
+        throw IllegalStateException(
+            "El backend no pudo conectarse con MySQL"
+        )
+    }
+
     configureSerialization()
     configureRouting()
 }
