@@ -3,6 +3,8 @@ package com.gater.database
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 object DatabaseFactory {
 
@@ -20,33 +22,6 @@ object DatabaseFactory {
         val user = System.getenv("MYSQLUSER")
         val password = System.getenv("MYSQLPASSWORD")
 
-        // Diagnóstico temporal para comprobar qué variables recibe Railway.
-        println("==========================================")
-        println("DIAGNÓSTICO DE VARIABLES MYSQL")
-        println("HOST = ${if (host.isNullOrBlank()) "NO DISPONIBLE" else host}")
-        println("PORT = ${if (port.isNullOrBlank()) "NO DISPONIBLE" else port}")
-        println(
-            "DATABASE = ${
-                if (databaseName.isNullOrBlank()) {
-                    "NO DISPONIBLE"
-                } else {
-                    databaseName
-                }
-            }"
-        )
-        println("USER = ${if (user.isNullOrBlank()) "NO DISPONIBLE" else user}")
-        println(
-            "PASSWORD = ${
-                when {
-                    password == null -> "NULL"
-                    password.isBlank() -> "VACÍA"
-                    else -> "OK"
-                }
-            }"
-        )
-        println("==========================================")
-
-        // En pruebas locales las variables de Railway pueden no existir.
         if (
             host.isNullOrBlank() ||
             port.isNullOrBlank() ||
@@ -89,10 +64,21 @@ object DatabaseFactory {
 
             Database.connect(dataSource)
 
+            transaction {
+                SchemaUtils.create(
+                    UsuariosTable,
+                    HospitalesTable,
+                    UnidadesTable,
+                    ReportesTable,
+                    TrasladosTable
+                )
+            }
+
             inicializada = true
 
             println("==========================================")
             println("Conexión con MySQL realizada correctamente")
+            println("Tablas de GATER verificadas correctamente")
             println("==========================================")
 
             true
