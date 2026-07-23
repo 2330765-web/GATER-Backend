@@ -3,6 +3,7 @@ package com.gater.routes
 import com.gater.dto.ActualizarReporteRequest
 import com.gater.dto.CrearReporteRequest
 import com.gater.dto.MensajeResponse
+import com.gater.security.validarRol
 import com.gater.services.ReporteService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -20,7 +21,19 @@ fun Route.reporteRoutes() {
     route("/reportes") {
 
         // POST /reportes
+        // Todos los usuarios autenticados pueden crear reportes
         post {
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO",
+                    "CIUDADANO"
+                )
+            ) {
+                return@post
+            }
+
             try {
                 val request =
                     call.receive<CrearReporteRequest>()
@@ -60,7 +73,18 @@ fun Route.reporteRoutes() {
         }
 
         // GET /reportes
+        // Administrador, Coordinador y Bombero
         get {
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO"
+                )
+            ) {
+                return@get
+            }
+
             try {
                 call.respond(
                     HttpStatusCode.OK,
@@ -82,7 +106,19 @@ fun Route.reporteRoutes() {
         }
 
         // GET /reportes/{id}
+        // Todos los usuarios autenticados
         get("/{id}") {
+
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO",
+                    "CIUDADANO"
+                )
+            ) {
+                return@get
+            }
 
             val id =
                 call.parameters["id"]?.toIntOrNull()
@@ -142,7 +178,18 @@ fun Route.reporteRoutes() {
         }
 
         // PUT /reportes/{id}
+        // Administrador, Coordinador y Bombero
         put("/{id}") {
+
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO"
+                )
+            ) {
+                return@put
+            }
 
             val id =
                 call.parameters["id"]?.toIntOrNull()
@@ -208,7 +255,12 @@ fun Route.reporteRoutes() {
         }
 
         // DELETE /reportes/{id}
+        // Solo Administrador
         delete("/{id}") {
+
+            if (!call.validarRol("ADMINISTRADOR")) {
+                return@delete
+            }
 
             val id =
                 call.parameters["id"]?.toIntOrNull()

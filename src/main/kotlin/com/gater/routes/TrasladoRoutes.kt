@@ -3,6 +3,7 @@ package com.gater.routes
 import com.gater.dto.ActualizarTrasladoRequest
 import com.gater.dto.CrearTrasladoRequest
 import com.gater.dto.MensajeResponse
+import com.gater.security.validarRol
 import com.gater.services.TrasladoService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -20,7 +21,12 @@ fun Route.trasladoRoutes() {
     route("/traslados") {
 
         // POST /traslados
+        // Administrador y Coordinador
         post {
+            if (!call.validarRol("ADMINISTRADOR", "COORDINADOR")) {
+                return@post
+            }
+
             try {
                 val request =
                     call.receive<CrearTrasladoRequest>()
@@ -58,7 +64,18 @@ fun Route.trasladoRoutes() {
         }
 
         // GET /traslados
+        // Administrador, Coordinador y Bombero
         get {
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO"
+                )
+            ) {
+                return@get
+            }
+
             try {
                 call.respond(
                     HttpStatusCode.OK,
@@ -79,7 +96,18 @@ fun Route.trasladoRoutes() {
         }
 
         // GET /traslados/{id}
+        // Administrador, Coordinador y Bombero
         get("/{id}") {
+
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO"
+                )
+            ) {
+                return@get
+            }
 
             val id =
                 call.parameters["id"]?.toIntOrNull()
@@ -137,7 +165,18 @@ fun Route.trasladoRoutes() {
         }
 
         // PUT /traslados/{id}
+        // Administrador, Coordinador y Bombero
         put("/{id}") {
+
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO"
+                )
+            ) {
+                return@put
+            }
 
             val id =
                 call.parameters["id"]?.toIntOrNull()
@@ -201,7 +240,12 @@ fun Route.trasladoRoutes() {
         }
 
         // DELETE /traslados/{id}
+        // Solo Administrador
         delete("/{id}") {
+
+            if (!call.validarRol("ADMINISTRADOR")) {
+                return@delete
+            }
 
             val id =
                 call.parameters["id"]?.toIntOrNull()

@@ -3,6 +3,7 @@ package com.gater.routes
 import com.gater.dto.ActualizarHospitalRequest
 import com.gater.dto.CrearHospitalRequest
 import com.gater.dto.MensajeResponse
+import com.gater.security.validarRol
 import com.gater.services.HospitalService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -20,7 +21,12 @@ fun Route.hospitalRoutes() {
     route("/hospitales") {
 
         // POST /hospitales
+        // Solo Administrador y Coordinador
         post {
+            if (!call.validarRol("ADMINISTRADOR", "COORDINADOR")) {
+                return@post
+            }
+
             try {
                 val request =
                     call.receive<CrearHospitalRequest>()
@@ -57,7 +63,19 @@ fun Route.hospitalRoutes() {
         }
 
         // GET /hospitales
+        // Todos los usuarios autenticados
         get {
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO",
+                    "CIUDADANO"
+                )
+            ) {
+                return@get
+            }
+
             try {
                 call.respond(
                     HttpStatusCode.OK,
@@ -77,7 +95,19 @@ fun Route.hospitalRoutes() {
         }
 
         // GET /hospitales/{id}
+        // Todos los usuarios autenticados
         get("/{id}") {
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO",
+                    "CIUDADANO"
+                )
+            ) {
+                return@get
+            }
+
             val id = call.parameters["id"]?.toIntOrNull()
 
             if (id == null) {
@@ -121,7 +151,12 @@ fun Route.hospitalRoutes() {
         }
 
         // PUT /hospitales/{id}
+        // Solo Administrador y Coordinador
         put("/{id}") {
+            if (!call.validarRol("ADMINISTRADOR", "COORDINADOR")) {
+                return@put
+            }
+
             val id = call.parameters["id"]?.toIntOrNull()
 
             if (id == null) {
@@ -177,7 +212,12 @@ fun Route.hospitalRoutes() {
         }
 
         // DELETE /hospitales/{id}
+        // Solo Administrador
         delete("/{id}") {
+            if (!call.validarRol("ADMINISTRADOR")) {
+                return@delete
+            }
+
             val id = call.parameters["id"]?.toIntOrNull()
 
             if (id == null) {

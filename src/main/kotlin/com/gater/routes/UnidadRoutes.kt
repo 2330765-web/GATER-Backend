@@ -3,6 +3,7 @@ package com.gater.routes
 import com.gater.dto.ActualizarUnidadRequest
 import com.gater.dto.CrearUnidadRequest
 import com.gater.dto.MensajeResponse
+import com.gater.security.validarRol
 import com.gater.services.UnidadService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -19,7 +20,13 @@ fun Route.unidadRoutes() {
 
     route("/unidades") {
 
+        // POST /unidades
+        // Solo Administrador y Coordinador
         post {
+            if (!call.validarRol("ADMINISTRADOR", "COORDINADOR")) {
+                return@post
+            }
+
             try {
                 val request =
                     call.receive<CrearUnidadRequest>()
@@ -55,7 +62,20 @@ fun Route.unidadRoutes() {
             }
         }
 
+        // GET /unidades
+        // Todos los usuarios autenticados
         get {
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO",
+                    "CIUDADANO"
+                )
+            ) {
+                return@get
+            }
+
             try {
                 call.respond(
                     HttpStatusCode.OK,
@@ -74,7 +94,20 @@ fun Route.unidadRoutes() {
             }
         }
 
+        // GET /unidades/{id}
+        // Todos los usuarios autenticados
         get("/{id}") {
+            if (
+                !call.validarRol(
+                    "ADMINISTRADOR",
+                    "COORDINADOR",
+                    "BOMBERO",
+                    "CIUDADANO"
+                )
+            ) {
+                return@get
+            }
+
             val id = call.parameters["id"]?.toIntOrNull()
 
             if (id == null) {
@@ -126,7 +159,13 @@ fun Route.unidadRoutes() {
             }
         }
 
+        // PUT /unidades/{id}
+        // Solo Administrador y Coordinador
         put("/{id}") {
+            if (!call.validarRol("ADMINISTRADOR", "COORDINADOR")) {
+                return@put
+            }
+
             val id = call.parameters["id"]?.toIntOrNull()
 
             if (id == null) {
@@ -181,7 +220,13 @@ fun Route.unidadRoutes() {
             }
         }
 
+        // DELETE /unidades/{id}
+        // Solo Administrador
         delete("/{id}") {
+            if (!call.validarRol("ADMINISTRADOR")) {
+                return@delete
+            }
+
             val id = call.parameters["id"]?.toIntOrNull()
 
             if (id == null) {
