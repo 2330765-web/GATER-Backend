@@ -2,6 +2,7 @@ package com.gater
 
 import com.gater.config.configureSerialization
 import com.gater.database.DatabaseFactory
+import com.gater.security.configureSecurity
 import io.ktor.server.application.Application
 
 fun Application.rootModule() {
@@ -15,5 +16,6 @@ fun Application.rootModule() {
     }
 
     configureSerialization()
+    configureSecurity()
     configureRouting()
 }

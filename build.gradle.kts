@@ -21,6 +21,10 @@ ktor {
     }
 }
 
+repositories {
+    mavenCentral()
+}
+
 dependencies {
     // Servidor Ktor
     implementation(ktorLibs.server.core)
@@ -31,18 +35,23 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:3.5.0")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.0")
 
-    // MySQL: controlador oficial JDBC
+    // Autenticación y JWT
+    implementation("io.ktor:ktor-server-auth:3.5.0")
+    implementation("io.ktor:ktor-server-auth-jwt:3.5.0")
+    implementation("com.auth0:java-jwt:4.5.0")
+
+    // MySQL
     implementation("com.mysql:mysql-connector-j:9.7.0")
 
-    // Grupo de conexiones a la base de datos
+    // Pool de conexiones
     implementation("com.zaxxer:HikariCP:7.0.2")
 
-    // Exposed: acceso a MySQL desde Kotlin
+    // Exposed
     implementation("org.jetbrains.exposed:exposed-core:1.3.1")
     implementation("org.jetbrains.exposed:exposed-jdbc:1.3.1")
     implementation("org.jetbrains.exposed:exposed-java-time:1.3.1")
 
-    // Seguridad para contraseñas
+    // Seguridad de contraseñas
     implementation("org.mindrot:jbcrypt:0.4")
 
     // Pruebas

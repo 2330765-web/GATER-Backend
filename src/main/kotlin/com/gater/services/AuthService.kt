@@ -4,6 +4,7 @@ import com.gater.dto.LoginRequest
 import com.gater.dto.LoginResponse
 import com.gater.dto.UsuarioResponse
 import com.gater.repositories.UsuarioRepository
+import com.gater.security.JwtConfig
 import org.mindrot.jbcrypt.BCrypt
 
 object AuthService {
@@ -49,8 +50,15 @@ object AuthService {
             )
         }
 
+        val token = JwtConfig.generarToken(
+            usuarioId = usuario.id,
+            correo = usuario.correo,
+            rol = usuario.rol
+        )
+
         return LoginResponse(
             mensaje = "Inicio de sesión correcto",
+            token = token,
             usuario = UsuarioResponse(
                 id = usuario.id,
                 nombre = usuario.nombre,
