@@ -2,6 +2,7 @@ package com.gater
 
 import com.gater.routes.authRoutes
 import com.gater.routes.hospitalRoutes
+import com.gater.routes.reporteRoutes
 import com.gater.routes.unidadRoutes
 import com.gater.routes.usuarioRoutes
 import io.ktor.http.HttpStatusCode
@@ -46,5 +47,8 @@ fun Application.configureRouting() {
 
         // Unidades
         unidadRoutes()
+
+        // Reportes de emergencia
+        reporteRoutes()
     }
 }
