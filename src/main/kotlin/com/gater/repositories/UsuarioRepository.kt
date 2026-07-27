@@ -22,37 +22,133 @@ object UsuarioRepository {
         passwordHash: String
     ): Usuario = transaction(DatabaseFactory.database) {
 
-        val nuevoId = UsuariosTable.insert { statement ->
-            statement[UsuariosTable.nombre] =
-                request.nombre.trim()
+        val correoNormalizado =
+            request.correo
+                .trim()
+                .lowercase()
 
-            statement[UsuariosTable.correo] =
-                request.correo.trim().lowercase()
+        val usuarioExistente =
+            UsuariosTable
+                .selectAll()
+                .where {
+                    UsuariosTable.correo eq correoNormalizado
+                }
+                .limit(1)
+                .singleOrNull()
 
-            statement[UsuariosTable.passwordHash] =
-                passwordHash
+        if (usuarioExistente != null) {
+            throw IllegalArgumentException(
+                "El correo ya está registrado"
+            )
+        }
 
-            statement[UsuariosTable.rol] =
-                RolUsuario.valueOf(
-                    request.rol.trim().uppercase()
-                )
+        val nuevoId =
+            UsuariosTable.insert { statement ->
 
-            statement[UsuariosTable.area] =
-                request.area?.trim()
+                statement[UsuariosTable.nombre] =
+                    request.nombre.trim()
 
-            statement[UsuariosTable.telefono] =
-                request.telefono?.trim()
+                statement[UsuariosTable.correo] =
+                    correoNormalizado
 
-            statement[UsuariosTable.activo] =
-                true
+                statement[UsuariosTable.passwordHash] =
+                    passwordHash
 
-            statement[UsuariosTable.fechaCreacion] =
-                LocalDateTime.now()
-        } get UsuariosTable.id
+                statement[UsuariosTable.rol] =
+                    RolUsuario.valueOf(
+                        request.rol
+                            .trim()
+                            .uppercase()
+                    )
+
+                statement[UsuariosTable.area] =
+                    request.area
+                        ?.trim()
+                        ?.ifBlank { null }
+
+                statement[UsuariosTable.telefono] =
+                    request.telefono
+                        ?.trim()
+                        ?.ifBlank { null }
+
+                statement[UsuariosTable.activo] =
+                    true
+
+                statement[UsuariosTable.fechaCreacion] =
+                    LocalDateTime.now()
+            } get UsuariosTable.id
 
         obtenerPorIdInterno(nuevoId)
             ?: throw IllegalStateException(
                 "No fue posible recuperar el usuario creado"
+            )
+    }
+
+    fun crearCiudadano(
+        nombre: String,
+        correo: String,
+        passwordHash: String,
+        telefono: String?,
+        municipio: String?
+    ): Usuario = transaction(DatabaseFactory.database) {
+
+        val correoNormalizado =
+            correo
+                .trim()
+                .lowercase()
+
+        val usuarioExistente =
+            UsuariosTable
+                .selectAll()
+                .where {
+                    UsuariosTable.correo eq correoNormalizado
+                }
+                .limit(1)
+                .singleOrNull()
+
+        if (usuarioExistente != null) {
+            throw IllegalArgumentException(
+                "El correo ya está registrado"
+            )
+        }
+
+        val nuevoId =
+            UsuariosTable.insert { statement ->
+
+                statement[UsuariosTable.nombre] =
+                    nombre.trim()
+
+                statement[UsuariosTable.correo] =
+                    correoNormalizado
+
+                statement[UsuariosTable.passwordHash] =
+                    passwordHash
+
+                statement[UsuariosTable.rol] =
+                    RolUsuario.CIUDADANO
+
+                // Por ahora guardamos el municipio
+                // en el campo área.
+                statement[UsuariosTable.area] =
+                    municipio
+                        ?.trim()
+                        ?.ifBlank { null }
+
+                statement[UsuariosTable.telefono] =
+                    telefono
+                        ?.trim()
+                        ?.ifBlank { null }
+
+                statement[UsuariosTable.activo] =
+                    true
+
+                statement[UsuariosTable.fechaCreacion] =
+                    LocalDateTime.now()
+            } get UsuariosTable.id
+
+        obtenerPorIdInterno(nuevoId)
+            ?: throw IllegalStateException(
+                "No fue posible recuperar el ciudadano creado"
             )
     }
 
@@ -63,18 +159,25 @@ object UsuarioRepository {
                 .map(::filaAUsuario)
         }
 
-    fun obtenerPorId(id: Int): Usuario? =
+    fun obtenerPorId(
+        id: Int
+    ): Usuario? =
         transaction(DatabaseFactory.database) {
             obtenerPorIdInterno(id)
         }
 
-    fun obtenerPorCorreo(correo: String): Usuario? =
+    fun obtenerPorCorreo(
+        correo: String
+    ): Usuario? =
         transaction(DatabaseFactory.database) {
+
             UsuariosTable
                 .selectAll()
                 .where {
                     UsuariosTable.correo eq
-                            correo.trim().lowercase()
+                            correo
+                                .trim()
+                                .lowercase()
                 }
                 .limit(1)
                 .map(::filaAUsuario)
@@ -102,18 +205,24 @@ object UsuarioRepository {
                     request.rol?.let { nuevoRol ->
                         statement[UsuariosTable.rol] =
                             RolUsuario.valueOf(
-                                nuevoRol.trim().uppercase()
+                                nuevoRol
+                                    .trim()
+                                    .uppercase()
                             )
                     }
 
                     request.area?.let { nuevaArea ->
                         statement[UsuariosTable.area] =
-                            nuevaArea.trim()
+                            nuevaArea
+                                .trim()
+                                .ifBlank { null }
                     }
 
                     request.telefono?.let { nuevoTelefono ->
                         statement[UsuariosTable.telefono] =
-                            nuevoTelefono.trim()
+                            nuevoTelefono
+                                .trim()
+                                .ifBlank { null }
                     }
 
                     request.activo?.let { nuevoEstado ->
@@ -129,14 +238,18 @@ object UsuarioRepository {
             }
         }
 
-    fun eliminar(id: Int): Boolean =
+    fun eliminar(
+        id: Int
+    ): Boolean =
         transaction(DatabaseFactory.database) {
             UsuariosTable.deleteWhere {
                 UsuariosTable.id eq id
             } > 0
         }
 
-    private fun obtenerPorIdInterno(id: Int): Usuario? {
+    private fun obtenerPorIdInterno(
+        id: Int
+    ): Usuario? {
         return UsuariosTable
             .selectAll()
             .where {
@@ -147,12 +260,15 @@ object UsuarioRepository {
             .singleOrNull()
     }
 
-    private fun filaAUsuario(fila: ResultRow): Usuario {
+    private fun filaAUsuario(
+        fila: ResultRow
+    ): Usuario {
         return Usuario(
             id = fila[UsuariosTable.id],
             nombre = fila[UsuariosTable.nombre],
             correo = fila[UsuariosTable.correo],
-            passwordHash = fila[UsuariosTable.passwordHash],
+            passwordHash =
+                fila[UsuariosTable.passwordHash],
             rol = fila[UsuariosTable.rol].name,
             area = fila[UsuariosTable.area],
             telefono = fila[UsuariosTable.telefono],
