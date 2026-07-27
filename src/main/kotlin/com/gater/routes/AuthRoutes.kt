@@ -2,6 +2,7 @@ package com.gater.routes
 
 import com.gater.dto.LoginRequest
 import com.gater.dto.MensajeResponse
+import com.gater.dto.RegistroCiudadanoRequest
 import com.gater.services.AuthService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -23,6 +24,7 @@ fun Route.authRoutes() {
             )
 
         } catch (error: IllegalArgumentException) {
+
             call.respond(
                 status = HttpStatusCode.Unauthorized,
                 message = MensajeResponse(
@@ -32,12 +34,50 @@ fun Route.authRoutes() {
             )
 
         } catch (error: Exception) {
+
             error.printStackTrace()
 
             call.respond(
                 status = HttpStatusCode.InternalServerError,
                 message = MensajeResponse(
                     mensaje = "Ocurrió un error al iniciar sesión"
+                )
+            )
+        }
+    }
+
+    post("/registro") {
+
+        try {
+
+            val request =
+                call.receive<RegistroCiudadanoRequest>()
+
+            val response =
+                AuthService.registrarCiudadano(request)
+
+            call.respond(
+                status = HttpStatusCode.Created,
+                message = response
+            )
+
+        } catch (error: IllegalArgumentException) {
+
+            call.respond(
+                status = HttpStatusCode.BadRequest,
+                message = MensajeResponse(
+                    mensaje = error.message ?: "Datos inválidos"
+                )
+            )
+
+        } catch (error: Exception) {
+
+            error.printStackTrace()
+
+            call.respond(
+                status = HttpStatusCode.InternalServerError,
+                message = MensajeResponse(
+                    mensaje = "Error al registrar ciudadano"
                 )
             )
         }
