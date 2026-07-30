@@ -26,35 +26,61 @@ repositories {
 }
 
 dependencies {
+
+    // ==========================
     // Servidor Ktor
+    // ==========================
     implementation(ktorLibs.server.core)
     implementation(ktorLibs.server.netty)
     implementation(libs.logback.classic)
 
+    // ==========================
     // JSON
+    // ==========================
     implementation("io.ktor:ktor-server-content-negotiation:3.5.0")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.5.0")
 
-    // Autenticación y JWT
+    // ==========================
+    // Cliente HTTP (Resend)
+    // ==========================
+    implementation("io.ktor:ktor-client-core:3.5.0")
+    implementation("io.ktor:ktor-client-cio:3.5.0")
+    implementation("io.ktor:ktor-client-content-negotiation:3.5.0")
+    implementation("io.ktor:ktor-client-logging:3.5.0")
+    implementation("io.ktor:ktor-client-auth:3.5.0")
+
+    // ==========================
+    // JWT y autenticación
+    // ==========================
     implementation("io.ktor:ktor-server-auth:3.5.0")
     implementation("io.ktor:ktor-server-auth-jwt:3.5.0")
     implementation("com.auth0:java-jwt:4.5.0")
 
+    // ==========================
     // MySQL
+    // ==========================
     implementation("com.mysql:mysql-connector-j:9.7.0")
 
-    // Pool de conexiones
+    // ==========================
+    // HikariCP
+    // ==========================
     implementation("com.zaxxer:HikariCP:7.0.2")
 
+    // ==========================
     // Exposed
+    // ==========================
     implementation("org.jetbrains.exposed:exposed-core:1.3.1")
     implementation("org.jetbrains.exposed:exposed-jdbc:1.3.1")
     implementation("org.jetbrains.exposed:exposed-java-time:1.3.1")
 
-    // Seguridad de contraseñas
+    // ==========================
+    // BCrypt
+    // ==========================
     implementation("org.mindrot:jbcrypt:0.4")
 
-    // Pruebas
+    // ==========================
+    // Tests
+    // ==========================
     testImplementation(kotlin("test"))
     testImplementation(ktorLibs.server.testHost)
 }
