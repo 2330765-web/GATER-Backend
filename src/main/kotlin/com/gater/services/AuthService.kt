@@ -5,11 +5,18 @@ import com.gater.dto.LoginResponse
 import com.gater.dto.RegistroCiudadanoRequest
 import com.gater.dto.RegistroCiudadanoResponse
 import com.gater.dto.UsuarioResponse
+import com.gater.models.Usuario
 import com.gater.repositories.UsuarioRepository
 import com.gater.security.JwtConfig
 import org.mindrot.jbcrypt.BCrypt
+import java.security.SecureRandom
+import java.time.LocalDateTime
 
 object AuthService {
+
+    private const val DURACION_CODIGO_MINUTOS = 15L
+
+    private val secureRandom = SecureRandom()
 
     fun login(
         request: LoginRequest
@@ -57,6 +64,19 @@ object AuthService {
             )
         }
 
+        /*
+         * Los usuarios creados por el administrador
+         * quedan verificados automáticamente.
+         *
+         * Los ciudadanos registrados públicamente
+         * deben verificar primero su correo.
+         */
+        if (!usuario.correoVerificado) {
+            throw IllegalArgumentException(
+                "Debes verificar tu correo antes de iniciar sesión"
+            )
+        }
+
         val token =
             JwtConfig.generarToken(
                 usuarioId = usuario.id,
@@ -96,6 +116,200 @@ object AuthService {
                 ?.trim()
                 ?.ifBlank { null }
 
+        validarRegistroCiudadano(
+            nombre = nombre,
+            correo = correo,
+            password = password,
+            telefono = telefono,
+            municipio = municipio
+        )
+
+        val usuarioExistente =
+            UsuarioRepository.obtenerPorCorreo(correo)
+
+        if (usuarioExistente != null) {
+            throw IllegalArgumentException(
+                "El correo ya está registrado"
+            )
+        }
+
+        val passwordHash =
+            BCrypt.hashpw(
+                password,
+                BCrypt.gensalt()
+            )
+
+        val codigoVerificacion =
+            generarCodigoVerificacion()
+
+        val codigoExpiracion =
+            LocalDateTime.now()
+                .plusMinutes(
+                    DURACION_CODIGO_MINUTOS
+                )
+
+        val ciudadano =
+            UsuarioRepository.crearCiudadano(
+                nombre = nombre,
+                correo = correo,
+                passwordHash = passwordHash,
+                telefono = telefono,
+                municipio = municipio,
+                codigoVerificacion =
+                    codigoVerificacion,
+                codigoExpiracion =
+                    codigoExpiracion
+            )
+
+        /*
+         * Esta función se creará en el siguiente paso.
+         * Enviará el código al correo real del ciudadano.
+         */
+        CorreoService.enviarCodigoVerificacion(
+            destinatario = ciudadano.correo,
+            nombre = ciudadano.nombre,
+            codigo = codigoVerificacion
+        )
+
+        return RegistroCiudadanoResponse(
+            mensaje =
+                "Cuenta creada. Revisa tu correo para verificarla",
+            usuario = usuarioAResponse(ciudadano)
+        )
+    }
+
+    fun verificarCorreo(
+        correo: String,
+        codigo: String
+    ): UsuarioResponse {
+
+        val correoNormalizado =
+            correo
+                .trim()
+                .lowercase()
+
+        val codigoNormalizado =
+            codigo.trim()
+
+        if (
+            correoNormalizado.isBlank() ||
+            !correoNormalizado.contains("@")
+        ) {
+            throw IllegalArgumentException(
+                "El correo no es válido"
+            )
+        }
+
+        if (
+            codigoNormalizado.length != 6 ||
+            !codigoNormalizado.all(Char::isDigit)
+        ) {
+            throw IllegalArgumentException(
+                "El código debe tener 6 dígitos"
+            )
+        }
+
+        val usuario =
+            UsuarioRepository
+                .obtenerPorCorreo(correoNormalizado)
+                ?: throw IllegalArgumentException(
+                    "No existe una cuenta con ese correo"
+                )
+
+        if (usuario.correoVerificado) {
+            throw IllegalArgumentException(
+                "El correo ya fue verificado"
+            )
+        }
+
+        val codigoGuardado =
+            usuario.codigoVerificacion
+                ?: throw IllegalArgumentException(
+                    "No existe un código de verificación activo"
+                )
+
+        val expiracion =
+            usuario.codigoExpiracion
+                ?: throw IllegalArgumentException(
+                    "El código de verificación no es válido"
+                )
+
+        if (LocalDateTime.now().isAfter(expiracion)) {
+            throw IllegalArgumentException(
+                "El código de verificación expiró"
+            )
+        }
+
+        if (codigoGuardado != codigoNormalizado) {
+            throw IllegalArgumentException(
+                "El código de verificación es incorrecto"
+            )
+        }
+
+        val usuarioVerificado =
+            UsuarioRepository
+                .marcarCorreoVerificado(usuario.id)
+                ?: throw IllegalStateException(
+                    "No fue posible verificar el correo"
+                )
+
+        return usuarioAResponse(usuarioVerificado)
+    }
+
+    fun reenviarCodigoVerificacion(
+        correo: String
+    ) {
+        val correoNormalizado =
+            correo
+                .trim()
+                .lowercase()
+
+        val usuario =
+            UsuarioRepository
+                .obtenerPorCorreo(correoNormalizado)
+                ?: throw IllegalArgumentException(
+                    "No existe una cuenta con ese correo"
+                )
+
+        if (usuario.correoVerificado) {
+            throw IllegalArgumentException(
+                "El correo ya fue verificado"
+            )
+        }
+
+        val nuevoCodigo =
+            generarCodigoVerificacion()
+
+        val nuevaExpiracion =
+            LocalDateTime.now()
+                .plusMinutes(
+                    DURACION_CODIGO_MINUTOS
+                )
+
+        UsuarioRepository
+            .actualizarCodigoVerificacion(
+                usuarioId = usuario.id,
+                codigo = nuevoCodigo,
+                expiracion = nuevaExpiracion
+            )
+            ?: throw IllegalStateException(
+                "No fue posible actualizar el código"
+            )
+
+        CorreoService.enviarCodigoVerificacion(
+            destinatario = usuario.correo,
+            nombre = usuario.nombre,
+            codigo = nuevoCodigo
+        )
+    }
+
+    private fun validarRegistroCiudadano(
+        nombre: String,
+        correo: String,
+        password: String,
+        telefono: String?,
+        municipio: String?
+    ) {
         when {
             nombre.isBlank() -> {
                 throw IllegalArgumentException(
@@ -104,7 +318,9 @@ object AuthService {
             }
 
             correo.isBlank() ||
-                    !correo.contains("@") -> {
+                    !correo.contains("@") ||
+                    !correo.substringAfter("@")
+                        .contains(".") -> {
                 throw IllegalArgumentException(
                     "El correo no es válido"
                 )
@@ -135,39 +351,18 @@ object AuthService {
                 )
             }
         }
+    }
 
-        val usuarioExistente =
-            UsuarioRepository.obtenerPorCorreo(correo)
+    private fun generarCodigoVerificacion(): String {
+        val numero =
+            secureRandom.nextInt(900_000) +
+                    100_000
 
-        if (usuarioExistente != null) {
-            throw IllegalArgumentException(
-                "El correo ya está registrado"
-            )
-        }
-
-        val passwordHash =
-            BCrypt.hashpw(
-                password,
-                BCrypt.gensalt()
-            )
-
-        val ciudadano =
-            UsuarioRepository.crearCiudadano(
-                nombre = nombre,
-                correo = correo,
-                passwordHash = passwordHash,
-                telefono = telefono,
-                municipio = municipio
-            )
-
-        return RegistroCiudadanoResponse(
-            mensaje = "Cuenta creada correctamente",
-            usuario = usuarioAResponse(ciudadano)
-        )
+        return numero.toString()
     }
 
     private fun usuarioAResponse(
-        usuario: com.gater.models.Usuario
+        usuario: Usuario
     ): UsuarioResponse {
         return UsuarioResponse(
             id = usuario.id,

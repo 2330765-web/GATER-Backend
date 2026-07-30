@@ -1,5 +1,7 @@
 package com.gater.models
 
+import java.time.LocalDateTime
+
 data class Usuario(
 
     val id: Int,
@@ -16,6 +18,11 @@ data class Usuario(
 
     val telefono: String?,
 
-    val activo: Boolean
+    val activo: Boolean,
 
+    val correoVerificado: Boolean,
+
+    val codigoVerificacion: String?,
+
+    val codigoExpiracion: LocalDateTime?
 )

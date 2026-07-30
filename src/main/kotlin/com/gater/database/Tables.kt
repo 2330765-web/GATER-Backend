@@ -6,6 +6,7 @@ import org.jetbrains.exposed.v1.javatime.datetime
 import org.jetbrains.exposed.v1.javatime.time
 
 object UsuariosTable : Table("usuarios") {
+
     val id = integer("id").autoIncrement()
 
     val nombre = varchar("nombre", 120)
@@ -16,13 +17,25 @@ object UsuariosTable : Table("usuarios") {
     val area = varchar("area", 100).nullable()
     val telefono = varchar("telefono", 20).nullable()
 
+    // NUEVO
+    val correoVerificado =
+        bool("correo_verificado").default(false)
+
+    val codigoVerificacion =
+        varchar("codigo_verificacion", 6).nullable()
+
+    val codigoExpiracion =
+        datetime("codigo_expiracion").nullable()
+
     val activo = bool("activo").default(true)
+
     val fechaCreacion = datetime("fecha_creacion")
 
     override val primaryKey = PrimaryKey(id)
 }
 
 object HospitalesTable : Table("hospitales") {
+
     val id = integer("id").autoIncrement()
 
     val nombre = varchar("nombre", 150)
@@ -40,13 +53,16 @@ object HospitalesTable : Table("hospitales") {
 }
 
 object UnidadesTable : Table("unidades") {
+
     val id = integer("id").autoIncrement()
 
     val numero = varchar("numero", 50).uniqueIndex()
     val tipo = varchar("tipo", 80)
     val placas = varchar("placas", 30).nullable()
 
-    val estado = enumerationByName<EstadoUnidad>("estado", 30)
+    val estado =
+        enumerationByName<EstadoUnidad>("estado", 30)
+
     val operador = varchar("operador", 120).nullable()
     val capacidad = integer("capacidad").nullable()
 
@@ -56,6 +72,7 @@ object UnidadesTable : Table("unidades") {
 }
 
 object ReportesTable : Table("reportes") {
+
     val id = integer("id").autoIncrement()
 
     val usuarioId = integer("usuario_id")
@@ -63,26 +80,39 @@ object ReportesTable : Table("reportes") {
         .nullable()
 
     val tipoEmergencia = varchar("tipo_emergencia", 100)
+
     val descripcion = text("descripcion")
 
     val nivelEmergencia =
-        enumerationByName<NivelEmergencia>("nivel_emergencia", 20)
+        enumerationByName<NivelEmergencia>(
+            "nivel_emergencia",
+            20
+        )
 
-    val latitud = decimal("latitud", precision = 10, scale = 7)
-    val longitud = decimal("longitud", precision = 10, scale = 7)
+    val latitud =
+        decimal("latitud", 10, 7)
+
+    val longitud =
+        decimal("longitud", 10, 7)
 
     val direccionReferencia =
-        varchar("direccion_referencia", 255).nullable()
+        varchar("direccion_referencia", 255)
+            .nullable()
 
     val estado =
-        enumerationByName<EstadoReporte>("estado", 30)
+        enumerationByName<EstadoReporte>(
+            "estado",
+            30
+        )
 
-    val fechaCreacion = datetime("fecha_creacion")
+    val fechaCreacion =
+        datetime("fecha_creacion")
 
     override val primaryKey = PrimaryKey(id)
 }
 
 object TrasladosTable : Table("traslados") {
+
     val id = integer("id").autoIncrement()
 
     val paciente = varchar("paciente", 150)
@@ -104,15 +134,21 @@ object TrasladosTable : Table("traslados") {
     val hora = time("hora")
 
     val requiereOxigeno =
-        bool("requiere_oxigeno").default(false)
+        bool("requiere_oxigeno")
+            .default(false)
 
     val requiereParamedico =
-        bool("requiere_paramedico").default(false)
+        bool("requiere_paramedico")
+            .default(false)
 
     val estado =
-        enumerationByName<EstadoTraslado>("estado", 30)
+        enumerationByName<EstadoTraslado>(
+            "estado",
+            30
+        )
 
-    val observaciones = text("observaciones").nullable()
+    val observaciones =
+        text("observaciones").nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

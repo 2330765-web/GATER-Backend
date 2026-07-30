@@ -71,6 +71,15 @@ object UsuarioRepository {
                         ?.trim()
                         ?.ifBlank { null }
 
+                statement[UsuariosTable.correoVerificado] =
+                    true
+
+                statement[UsuariosTable.codigoVerificacion] =
+                    null
+
+                statement[UsuariosTable.codigoExpiracion] =
+                    null
+
                 statement[UsuariosTable.activo] =
                     true
 
@@ -89,7 +98,9 @@ object UsuarioRepository {
         correo: String,
         passwordHash: String,
         telefono: String?,
-        municipio: String?
+        municipio: String?,
+        codigoVerificacion: String,
+        codigoExpiracion: LocalDateTime
     ): Usuario = transaction(DatabaseFactory.database) {
 
         val correoNormalizado =
@@ -127,8 +138,6 @@ object UsuarioRepository {
                 statement[UsuariosTable.rol] =
                     RolUsuario.CIUDADANO
 
-                // Por ahora guardamos el municipio
-                // en el campo área.
                 statement[UsuariosTable.area] =
                     municipio
                         ?.trim()
@@ -138,6 +147,15 @@ object UsuarioRepository {
                     telefono
                         ?.trim()
                         ?.ifBlank { null }
+
+                statement[UsuariosTable.correoVerificado] =
+                    false
+
+                statement[UsuariosTable.codigoVerificacion] =
+                    codigoVerificacion
+
+                statement[UsuariosTable.codigoExpiracion] =
+                    codigoExpiracion
 
                 statement[UsuariosTable.activo] =
                     true
@@ -238,6 +256,66 @@ object UsuarioRepository {
             }
         }
 
+    fun marcarCorreoVerificado(
+        usuarioId: Int
+    ): Usuario? =
+        transaction(DatabaseFactory.database) {
+
+            val filasActualizadas =
+                UsuariosTable.update(
+                    where = {
+                        UsuariosTable.id eq usuarioId
+                    }
+                ) { statement ->
+
+                    statement[UsuariosTable.correoVerificado] =
+                        true
+
+                    statement[UsuariosTable.codigoVerificacion] =
+                        null
+
+                    statement[UsuariosTable.codigoExpiracion] =
+                        null
+                }
+
+            if (filasActualizadas == 0) {
+                null
+            } else {
+                obtenerPorIdInterno(usuarioId)
+            }
+        }
+
+    fun actualizarCodigoVerificacion(
+        usuarioId: Int,
+        codigo: String,
+        expiracion: LocalDateTime
+    ): Usuario? =
+        transaction(DatabaseFactory.database) {
+
+            val filasActualizadas =
+                UsuariosTable.update(
+                    where = {
+                        UsuariosTable.id eq usuarioId
+                    }
+                ) { statement ->
+
+                    statement[UsuariosTable.correoVerificado] =
+                        false
+
+                    statement[UsuariosTable.codigoVerificacion] =
+                        codigo
+
+                    statement[UsuariosTable.codigoExpiracion] =
+                        expiracion
+                }
+
+            if (filasActualizadas == 0) {
+                null
+            } else {
+                obtenerPorIdInterno(usuarioId)
+            }
+        }
+
     fun eliminar(
         id: Int
     ): Boolean =
@@ -272,7 +350,13 @@ object UsuarioRepository {
             rol = fila[UsuariosTable.rol].name,
             area = fila[UsuariosTable.area],
             telefono = fila[UsuariosTable.telefono],
-            activo = fila[UsuariosTable.activo]
+            activo = fila[UsuariosTable.activo],
+            correoVerificado =
+                fila[UsuariosTable.correoVerificado],
+            codigoVerificacion =
+                fila[UsuariosTable.codigoVerificacion],
+            codigoExpiracion =
+                fila[UsuariosTable.codigoExpiracion]
         )
     }
 }
